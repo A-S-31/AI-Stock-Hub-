@@ -1,0 +1,13 @@
+beautifulsoup4
+Flask
+Flask_Cors
+holidays
+keras
+numpy
+pandas
+pymongo
+Requests
+scikit_learn
+yfinance
+gunicorn
+tensorflow
