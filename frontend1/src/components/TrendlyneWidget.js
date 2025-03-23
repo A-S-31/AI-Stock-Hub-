@@ -10,7 +10,9 @@ const TrendlyneWidgets = ({ ticker }) => {
     document.body.appendChild(trendlyneScript);
 
     // Cleanup scripts when the component unmounts
-   
+    return () => {
+      document.body.removeChild(trendlyneScript);
+    };
   }, []);
 
   const stripTicker = (ticker) => {
@@ -18,11 +20,13 @@ const TrendlyneWidgets = ({ ticker }) => {
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-semibold mb-6 text-center">Analysis for <span style={{color:"green"}}> {ticker}</span> </h2>
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">
+    <div className="p-6 bg-gray-950 text-white">
+      <h2 className="text-3xl font-bold mb-8 text-center">
+        Analysis for <span className="text-green-500">{ticker}</span>
+      </h2>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
         {/* SWOT Widget */}
-        <div className=" rounded-lg shadow-md">
+        <div className="bg-gray-900 rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
           <blockquote
             className="trendlyne-widgets"
             data-get-url={`https://trendlyne.com/web-widget/swot-widget/Poppins/${stripTicker(ticker)}/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E`}
@@ -30,9 +34,8 @@ const TrendlyneWidgets = ({ ticker }) => {
           ></blockquote>
         </div>
 
-
         {/* QVT Widget */}
-        <div className=" rounded-lg shadow-md ">
+        <div className="bg-gray-900 rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
           <blockquote
             className="trendlyne-widgets"
             data-get-url={`https://trendlyne.com/web-widget/qvt-widget/Poppins/${stripTicker(ticker)}/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E`}
@@ -41,7 +44,7 @@ const TrendlyneWidgets = ({ ticker }) => {
         </div>
 
         {/* Technical Widget */}
-        <div className=" rounded-lg shadow-md">
+        <div className="bg-gray-900 rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
           <blockquote
             className="trendlyne-widgets"
             data-get-url={`https://trendlyne.com/web-widget/technical-widget/Poppins/${stripTicker(ticker)}/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E`}
@@ -49,10 +52,8 @@ const TrendlyneWidgets = ({ ticker }) => {
           ></blockquote>
         </div>
 
-        
-
         {/* Checklist Widget */}
-        <div className="rounded-lg shadow-md">
+        <div className="bg-gray-900 rounded-lg shadow-lg p-4 hover:shadow-xl transition-shadow duration-300">
           <blockquote
             className="trendlyne-widgets"
             data-get-url={`https://trendlyne.com/web-widget/checklist-widget/Poppins/${stripTicker(ticker)}/?posCol=00A25B&primaryCol=006AFF&negCol=EB3B00&neuCol=F7941E`}

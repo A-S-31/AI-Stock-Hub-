@@ -7,6 +7,15 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGripVertical, faMinus, faWindowRestore } from '@fortawesome/free-solid-svg-icons';
 import 'react-resizable/css/styles.css';
 
+// Debounce function
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+};
+
 function CandleSticks() {
   const [isMinimized, setIsMinimized] = useState(false);
   const [ticker, setTicker] = useState('ADANIENT.NS');
@@ -41,8 +50,8 @@ function CandleSticks() {
   useEffect(() => {
     if (data.length > 0) {
       const chartContainer = chartContainerRef.current;
+      if (!chartContainer) return;
 
-      // Initialize the chart
       const chart = createChart(chartContainer, {
         width: chartContainer.clientWidth,
         height: chartContainer.clientHeight,
@@ -65,28 +74,16 @@ function CandleSticks() {
         },
       });
 
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (let entry of entries) {
-          const { width, height } = entry.contentRect;
-          chart.resize(width, height);
-        }
-      });
+      // Debounced resize handler
+      const handleResize = debounce(() => {
+        chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
+      }, 100);
+
+      const resizeObserver = new ResizeObserver(handleResize);
       resizeObserver.observe(chartContainer);
 
-      // Filter out items with invalid dates
-      const validData = data.filter((item) => {
-        const date = new Date(item.Date);
-        return !isNaN(date.getTime()); // Valid if getTime() returns a number
-      });
-
-      // Log a warning if any dates were invalid
-      if (validData.length < data.length) {
-        console.warn(`Filtered out ${data.length - validData.length} invalid dates`);
-        console.log('Invalid dates:',data.filter((item) => isNaN(new Date(item.Date).getTime())));
-      }
-
-      // Map only valid data to chart format
-      const formattedData = validData.map((item) => ({
+      // Process data
+      const formattedData = data.map((item) => ({
         time: new Date(item.Date).toISOString().split('T')[0],
         open: item.Open,
         high: item.High,
@@ -107,14 +104,10 @@ function CandleSticks() {
           });
           break;
         case 'Line':
-          series = chart.addLineSeries({
-            color: '#4CAF50',
-          });
+          series = chart.addLineSeries({ color: '#4CAF50' });
           break;
         case 'Histogram':
-          series = chart.addHistogramSeries({
-            color: '#26a69a',
-          });
+          series = chart.addHistogramSeries({ color: '#26a69a' });
           break;
         case 'Area':
           series = chart.addAreaSeries({

@@ -22,7 +22,13 @@ import 'react-resizable/css/styles.css';
 
 // Function to calculate moving average
 const calculateMovingAverage = (data, windowSize) => {
-  if (!data || data.length < windowSize) return [];
+  console.log("Input Data for Moving Average:", data);
+  console.log("Window Size:", windowSize);
+
+  if (!data || data.length < windowSize) {
+    console.warn("Insufficient data for moving average calculation");
+    return Array(data.length).fill(null);
+  }
 
   const movingAverages = [];
   for (let i = windowSize - 1; i < data.length; i++) {
@@ -32,10 +38,8 @@ const calculateMovingAverage = (data, windowSize) => {
     movingAverages.push(average);
   }
 
-  // Prepend nulls to align with the original data length
-  return Array(windowSize - 1)
-    .fill(null)
-    .concat(movingAverages);
+  console.log(`Calculated ${windowSize}-Day Moving Average:`, movingAverages);
+  return Array(windowSize - 1).fill(null).concat(movingAverages);
 };
 
 
@@ -110,22 +114,27 @@ const IndividualStockData = () => {
     const API_URL = process.env.REACT_APP_BACKEND_URL;
     setLoading(true);
     setError(null);
-    
+  
     try {
       const response = await axios.get(`http://localhost:5000/stock-data`, {
         params: { ticker, start_date: startDate, end_date: endDate },
       });
-      
+  
       const stockData = response.data;
-      const closePrices = stockData.map(item => item.Close);
-      
+      const closePrices =stockData?.map((item) => extractValue(item, 'Close'))
+  
       // Calculate moving averages
       const ma100 = calculateMovingAverage(closePrices, 100);
       const ma200 = calculateMovingAverage(closePrices, 200);
-      console.log("Stock Data:", stockData);
+  
+      console.log("Fetched Stock Data:", stockData);
+      console.log("100-Day Moving Average:", ma100);
+      console.log("200-Day Moving Average:", ma200);
+  
       setData({ stockData, ma100, ma200, fetchForTab });
     } catch (error) {
       setError("Error fetching data. Please try again.");
+      console.error("Error fetching stock data:", error);
     } finally {
       setLoading(false);
     }
@@ -134,8 +143,21 @@ const IndividualStockData = () => {
 
   const extractDate = (item) => {
     const timestamp = Object.entries(item).find(([key]) => key.includes('Date'))?.[1];
-    return timestamp ? new Date(timestamp) : null;
+    
+    if (!timestamp) return null;
+  
+    const parsedDate = new Date(timestamp);
+  
+    // Check for invalid dates
+    if (isNaN(parsedDate.getTime())) {
+      console.warn('Invalid date encountered:', timestamp);
+      return null;
+    }
+  
+    return parsedDate.toLocaleDateString("en-GB");
   };
+  
+  
   
   const extractValue = (item, label) => {
     return Object.entries(item).find(([key]) => key.includes(label))?.[1] ?? null;
@@ -145,28 +167,28 @@ const IndividualStockData = () => {
     {
       type: "scatter",
       mode: "lines",
-      x: data.stockData?.map(extractDate),
-      y: data.stockData?.map((item) => extractValue(item, 'Close')),
+      x: data.stockData?.map(extractDate), // Dates for Close Price
+      y: data.stockData?.map((item) => extractValue(item, 'Close')), // Close Price
       name: "Close Price",
+      line: { color: "blue" },
     },
     {
       type: "scatter",
       mode: "lines",
-      x: data.stockData?.map(extractDate),
-      y: data.ma100,
+      x: data.stockData?.slice(99).map(extractDate), // Dates for 100-Day MA (start from 100th index)
+      y: data.ma100?.slice(99), // 100-Day Moving Average (start from 100th index)
       name: "100-Day Moving Average",
       line: { color: "orange" },
     },
     {
       type: "scatter",
       mode: "lines",
-      x: data.stockData?.map(extractDate),
-      y: data.ma200,
+      x: data.stockData?.slice(199).map(extractDate), // Dates for 200-Day MA (start from 200th index)
+      y: data.ma200?.slice(199), // 200-Day Moving Average (start from 200th index)
       name: "200-Day Moving Average",
       line: { color: "purple" },
     },
   ];
-  
   const plotData2 = [
     {
       type: "scatter",
@@ -408,47 +430,57 @@ const IndividualStockData = () => {
          
         </StyledTabs>
         <Box sx={{ padding: 3 }}>
-          {tabIndex === 0 && data.fetchForTab === "priceMovements" && (
-            <div style={{ width: "100%", height: "400px", overflowY: "auto", marginBottom: "20px",overflowX:"hidden",}}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', color: 'white' }}>
-                <thead>
-                  <tr>
+        {tabIndex === 0 && data.fetchForTab === "priceMovements" && (
+  <div style={{ width: "100%", height: "400px", overflowY: "auto", marginBottom: "20px", overflowX: "hidden" }}>
+    <table style={{ 
+      width: '100%', 
+      borderCollapse: 'separate', 
+      borderSpacing: '0', 
+      color: 'white', 
+      borderRadius: '10px', 
+      overflow: 'hidden',
+      backgroundColor: '#1E293B', // Dark blue background for the table
+    }}>
+      <thead>
+        <tr style={{ backgroundColor: '#0F172A' }}> {/* Darker blue header */}
+          <th style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', fontWeight: '600', textAlign: 'left' }}>Date</th>
+          <th style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', fontWeight: '600', textAlign: 'left' }}>Open</th>
+          <th style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', fontWeight: '600', textAlign: 'left' }}>High</th>
+          <th style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', fontWeight: '600', textAlign: 'left' }}>Low</th>
+          <th style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '2px solid #334155', fontWeight: '600', textAlign: 'left' }}>Close</th>
+          <th style={{ padding: '12px', borderBottom: '2px solid #334155', fontWeight: '600', textAlign: 'left' }}>Volume</th> {/* No right border for the last column */}
+        </tr>
+      </thead>
+      <tbody>
+        {data.stockData && data.stockData.map((item, index) => (
+          <tr key={index} style={{ 
+            backgroundColor: index % 2 === 0 ? '#1E293B' : '#2D3748', 
+            transition: 'background-color 0.3s ease',
+          }}>
+            {/* Extract and format Date */}
+            <td style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', textAlign: 'left' }}>
+              {new Date(Object.entries(item).find(([key]) => key.includes('Date'))[1]).toLocaleDateString("en-GB")}
+            </td>
 
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Date</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Open</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>High</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Low</th>
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Close</th>
-                    {/* <th style={{ border: '1px solid #ddd', padding: '8px' }}>Adj Close</th> */}
-                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Volume</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {data.stockData && data.stockData.map((item, index) => (
-  <tr key={index}>
-    {console.log("Item:", item)}
-    
-    {/* Extract and format Date */}
-    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-      {new Date(Object.entries(item).find(([key]) => key.includes('Date'))[1]).toLocaleDateString("en-GB")}
-    </td>
-    
-    {/* Extract other values dynamically */}
-    {['Open', 'High', 'Low', 'Close', 'Volume'].map((label) => {
-      const value = Object.entries(item).find(([key]) => key.includes(label))?.[1] ?? 'N/A';
-      return (
-        <td key={label} style={{ border: '1px solid #ddd', padding: '8px' }}>
-          {value}
-        </td>
-      );
-    })}
-  </tr>
-))}
-
-                </tbody>
-              </table>
-            </div>
-          )}
+            {/* Extract other values dynamically */}
+            {['Open', 'High', 'Low', 'Close'].map((label) => {
+              const value = Object.entries(item).find(([key]) => key.includes(label))?.[1] ?? 'N/A';
+              return (
+                <td key={label} style={{ padding: '12px', borderRight: '1px solid #334155', borderBottom: '1px solid #334155', textAlign: 'left' }}>
+                  {value}
+                </td>
+              );
+            })}
+            {/* Volume Column */}
+            <td style={{ padding: '12px', borderBottom: '1px solid #334155', textAlign: 'left' }}>
+              {Object.entries(item).find(([key]) => key.includes('Volume'))?.[1] ?? 'N/A'}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
           {tabIndex === 1 && data.fetchForTab === "Chart" && (
             <div style={{display:"flex", width: "100%", height: "500px", marginBottom: "20px",justifyContent:"center",alignItems:"center"}}>
               <Plot
